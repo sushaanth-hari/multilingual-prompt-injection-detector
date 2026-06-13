@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+langdetect
+deep-translator
+transformers
+torch
+python-multipart

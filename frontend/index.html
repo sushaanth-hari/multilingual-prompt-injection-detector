@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InjectionGuard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        :root{
+            --bg:#f4f7ff;--card:#ffffff;--border:#d0dcff;
+            --text:#0d1b3e;--text2:#6b8cba;
+            --navbar:#1a5cd4;--sidebar:#dce8ff;
+            --sidebar-text:#0d1b3e;--sidebar-active:#b8d0ff;
+            --sidebar-hover:#c8dcff;--input-bg:#f0f4ff;
+            --shadow:rgba(26,92,212,0.08);
+        }
+        body.dark{
+            --bg:#0a0f1e;--card:#0d1b3e;--border:#1a3a6e;
+            --text:#ffffff;--text2:#6b8cba;
+            --navbar:#060c18;--sidebar:#0a1628;
+            --sidebar-text:#a0c0ff;--sidebar-active:#1a3a6e;
+            --sidebar-hover:#1a3a6e;--input-bg:#0a0f1e;
+            --shadow:rgba(0,0,0,0.3);
+        }
+        body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background 0.3s,color 0.3s;}
+
+        /* AUTH */
+        .auth-page{display:flex;justify-content:center;align-items:center;min-height:100vh;position:relative;overflow:hidden;background:linear-gradient(135deg,#dce8ff,#ffffff);}
+        body.dark .auth-page{background:linear-gradient(135deg,#0a0f1e,#0d1b3e);}
+        .bg-shape{position:absolute;border-radius:50%;opacity:0.07;animation:floatA 6s ease-in-out infinite;}
+        .bs1{width:400px;height:400px;background:#1a5cd4;top:-100px;right:-100px;}
+        .bs2{width:300px;height:300px;background:#4a9eff;bottom:-80px;left:-80px;animation-delay:2s;}
+        .bs3{width:200px;height:200px;background:#1a5cd4;top:50%;left:10%;animation-delay:4s;}
+        @keyframes floatA{0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(-20px) rotate(5deg);}}
+        .auth-card{background:var(--card);border:2px solid var(--border);border-radius:24px;padding:40px;width:100%;max-width:420px;box-shadow:0 20px 60px var(--shadow);position:relative;z-index:1;}
+        .auth-logo{text-align:center;margin-bottom:24px;}
+        .auth-logo-icon{width:68px;height:68px;margin:0 auto 10px;background:linear-gradient(135deg,#1a5cd4,#4a9eff);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:2rem;box-shadow:0 8px 20px rgba(26,92,212,0.3);}
+        .auth-logo h1{font-size:1.55rem;color:#1a5cd4;font-weight:800;margin-bottom:3px;}
+        .auth-logo p{color:var(--text2);font-size:0.83rem;}
+        .auth-tabs{display:flex;background:var(--input-bg);border-radius:10px;padding:4px;margin-bottom:22px;}
+        .auth-tab{flex:1;padding:10px;text-align:center;border-radius:8px;cursor:pointer;color:var(--text2);font-size:0.9rem;transition:all 0.3s;font-weight:600;}
+        .auth-tab.active{background:#1a5cd4;color:#fff;}
+        .form-group{margin-bottom:14px;}
+        .form-group label{display:block;color:var(--text);font-size:0.78rem;margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+        .form-group input{width:100%;padding:11px 14px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:0.93rem;outline:none;transition:all 0.3s;}
+        .form-group input:focus{border-color:#1a5cd4;background:var(--card);box-shadow:0 0 0 3px rgba(26,92,212,0.1);}
+        .btn-primary{width:100%;padding:13px;background:linear-gradient(135deg,#1a5cd4,#4a9eff);color:#fff;border:none;border-radius:10px;font-size:0.98rem;cursor:pointer;font-weight:700;margin-top:8px;transition:opacity 0.3s;}
+        .btn-primary:hover{opacity:0.88;}
+        .error-msg{background:#fff0f0;border:1.5px solid #e74c3c;color:#c0392b;padding:9px 13px;border-radius:8px;font-size:0.83rem;margin-bottom:12px;display:none;}
+        .success-msg{background:#f0fff4;border:1.5px solid #1db954;color:#1a8a3c;padding:9px 13px;border-radius:8px;font-size:0.83rem;margin-bottom:12px;display:none;}
+
+        /* APP */
+        .app-page{display:none;height:100vh;flex-direction:column;}
+        .app-page.show{display:flex;}
+
+        /* NAVBAR */
+        .navbar{background:var(--navbar);padding:0 22px;height:56px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #4a9eff;flex-shrink:0;}
+        .nb-brand{display:flex;align-items:center;gap:9px;}
+        .nb-icon{width:30px;height:30px;background:rgba(255,255,255,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.95rem;}
+        .nb-text{font-size:1rem;color:#fff;font-weight:800;}
+        .nb-right{display:flex;align-items:center;gap:9px;}
+        .user-badge{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.12);padding:5px 11px;border-radius:20px;}
+        .user-badge span{color:#e0f0ff;font-size:0.82rem;font-weight:600;}
+        .theme-btn{width:38px;height:21px;background:rgba(255,255,255,0.15);border-radius:11px;cursor:pointer;position:relative;border:none;}
+        .theme-btn::after{content:'';position:absolute;width:15px;height:15px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform 0.3s;}
+        body.dark .theme-btn::after{transform:translateX(17px);}
+        .btn-logout{padding:6px 12px;background:transparent;border:1.5px solid rgba(255,255,255,0.4);border-radius:7px;color:#fff;cursor:pointer;font-size:0.78rem;font-weight:600;transition:all 0.3s;}
+        .btn-logout:hover{background:#e74c3c;border-color:#e74c3c;}
+
+        /* LAYOUT */
+        .layout{display:flex;flex:1;overflow:hidden;height:calc(100vh - 56px);}
+
+        /* SIDEBAR */
+        .sidebar{width:195px;background:var(--sidebar);border-right:2px solid #b8d0ff;padding:12px 0;flex-shrink:0;display:flex;flex-direction:column;}
+        .sb-brand{padding:8px 15px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #c8dcff;margin-bottom:6px;}
+        .sb-brand-icon{width:28px;height:28px;background:linear-gradient(135deg,#1a5cd4,#4a9eff);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:0.85rem;}
+        .sb-brand-text{font-size:0.82rem;font-weight:800;color:#1a5cd4;}
+        .sb-menu-label{padding:6px 15px 3px;font-size:0.63rem;color:#4a6a9e;text-transform:uppercase;letter-spacing:1px;font-weight:700;}
+        .sb-item{padding:10px 15px;color:var(--sidebar-text);cursor:pointer;font-size:0.85rem;transition:all 0.25s;border-left:3px solid transparent;margin-bottom:1px;font-weight:500;display:flex;align-items:center;gap:8px;}
+        .sb-item:hover{background:var(--sidebar-hover);color:#1a5cd4;border-left-color:#4a9eff;}
+        .sb-item.active{background:var(--sidebar-active);color:#1a5cd4;border-left-color:#1a5cd4;font-weight:700;}
+        .sb-icon{font-size:0.95rem;width:18px;text-align:center;}
+
+        /* CONTENT */
+        .content{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+        .content-page{display:none;flex-direction:column;flex:1;overflow:hidden;}
+        .content-page.active{display:flex;}
+
+        /* PAGE HEADER */
+        .ph{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 12px;border-bottom:2px solid var(--border);background:var(--card);flex-shrink:0;}
+        .ph-title{font-size:1.05rem;color:var(--text);font-weight:800;}
+        .ph-title span{color:#1a5cd4;}
+
+        /* SCROLLABLE BODY */
+        .page-body{flex:1;overflow-y:auto;padding:18px 22px;}
+
+        /* CARD */
+        .card{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:17px;margin-bottom:14px;box-shadow:0 2px 10px var(--shadow);}
+        .ct{font-size:0.78rem;font-weight:700;color:#1a5cd4;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;}
+
+        /* ══ CHAT PAGE ══ */
+        #content-chat{overflow:hidden;}
+        .chat-hero{background:linear-gradient(135deg,#1a5cd4,#0d1b3e);padding:13px 20px;position:relative;overflow:hidden;flex-shrink:0;}
+        .chat-hero-inner{position:relative;z-index:1;}
+        .chat-hero h2{color:#fff;font-size:0.95rem;font-weight:800;margin-bottom:2px;}
+        .chat-hero p{color:#a0c0ff;font-size:0.74rem;}
+        .hero-badges{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;}
+        .hbadge{background:rgba(255,255,255,0.12);color:#e0f0ff;padding:2px 8px;border-radius:20px;font-size:0.68rem;font-weight:600;border:1px solid rgba(255,255,255,0.2);}
+        .hero-deco{position:absolute;right:0;top:0;bottom:0;width:130px;}
+        .hdc{position:absolute;border-radius:50%;background:rgba(255,255,255,0.05);}
+        .hdc1{width:90px;height:90px;top:-15px;right:-5px;}
+        .hdc2{width:55px;height:55px;bottom:-5px;right:40px;}
+        .hdc3{width:35px;height:35px;top:6px;right:65px;}
+
+        .chat-msgs{flex:1;overflow-y:auto;padding:14px 20px;display:flex;flex-direction:column;gap:10px;}
+
+        /* Welcome */
+        .chat-welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 14px;text-align:center;}
+        .w-icon{width:64px;height:64px;background:linear-gradient(135deg,#1a5cd4,#4a9eff);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.9rem;margin-bottom:11px;box-shadow:0 8px 24px rgba(26,92,212,0.3);}
+        .w-title{font-size:1rem;font-weight:800;color:var(--text);margin-bottom:5px;}
+        .w-sub{color:var(--text2);font-size:0.81rem;line-height:1.6;max-width:340px;margin-bottom:14px;}
+        .feat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;width:100%;max-width:380px;margin-bottom:13px;}
+        .feat-card{background:var(--card);border:1.5px solid var(--border);border-radius:9px;padding:9px;text-align:left;}
+        .fc-icon{font-size:1.1rem;margin-bottom:3px;}
+        .fc-title{font-size:0.74rem;font-weight:700;color:var(--text);}
+        .fc-desc{font-size:0.67rem;color:var(--text2);margin-top:1px;}
+        .chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
+        .chip{background:var(--card);border:1.5px solid var(--border);color:var(--text2);padding:4px 10px;border-radius:20px;font-size:0.73rem;cursor:pointer;transition:all 0.3s;font-weight:500;}
+        .chip:hover{background:#dce8ff;border-color:#1a5cd4;color:#1a5cd4;}
+
+        /* ── USER BUBBLE ── */
+        .mb-user{display:flex;justify-content:flex-end;}
+        .mb-user-b{background:linear-gradient(135deg,#1a5cd4,#4a9eff);color:#fff;padding:9px 13px;border-radius:15px 15px 4px 15px;max-width:70%;font-size:0.87rem;line-height:1.5;box-shadow:0 2px 8px rgba(26,92,212,0.3);}
+
+        /* ── AI BUBBLE WRAPPER ── */
+        .mb-ai{display:flex;gap:8px;align-items:flex-start;}
+
+        /* Avatar — changes colour based on safety */
+        .mb-av-safe{width:30px;height:30px;flex-shrink:0;background:linear-gradient(135deg,#1db954,#2ecc71);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;box-shadow:0 2px 6px rgba(29,185,84,0.4);}
+        .mb-av-warn{width:30px;height:30px;flex-shrink:0;background:linear-gradient(135deg,#e67e22,#f39c12);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;box-shadow:0 2px 6px rgba(230,126,34,0.4);}
+        .mb-av-danger{width:30px;height:30px;flex-shrink:0;background:linear-gradient(135deg,#e74c3c,#c0392b);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;box-shadow:0 2px 6px rgba(231,76,60,0.4);animation:pulseRed 1.5s infinite;}
+        @keyframes pulseRed{0%,100%{box-shadow:0 2px 6px rgba(231,76,60,0.4);}50%{box-shadow:0 2px 18px rgba(231,76,60,0.8);}}
+
+        /* AI Bubble — green border = safe, orange = medium, red = high/critical */
+        .mb-ai-b{
+            background:var(--card);
+            color:var(--text);
+            padding:10px 13px;
+            border-radius:4px 15px 15px 15px;
+            max-width:75%;
+            font-size:0.87rem;
+            line-height:1.6;
+            box-shadow:0 2px 8px var(--shadow);
+            border:2px solid transparent;
+            transition:border-color 0.3s;
+        }
+        .mb-ai-b.b-safe{border-color:#1db954;}
+        .mb-ai-b.b-warn{border-color:#e67e22;}
+        .mb-ai-b.b-danger{border-color:#e74c3c;}
+
+        /* Safety Badge Row — always shown */
+        .safety-row{
+            display:flex;align-items:center;gap:6px;
+            margin-top:8px;padding-top:7px;
+            border-top:1px solid var(--border);
+            flex-wrap:wrap;
+        }
+        .safety-badge{
+            display:inline-flex;align-items:center;gap:4px;
+            padding:3px 10px;border-radius:20px;
+            font-size:0.72rem;font-weight:800;
+            letter-spacing:0.3px;
+        }
+        .sb-safe{background:#e8fff0;color:#1a8a3c;border:1.5px solid #1db954;}
+        .sb-unsafe{background:#fff0f0;color:#c0392b;border:1.5px solid #e74c3c;}
+        .sb-medium{background:#fff8e0;color:#b7560a;border:1.5px solid #e67e22;}
+
+        .conf-badge{
+            display:inline-flex;align-items:center;gap:3px;
+            padding:3px 9px;border-radius:20px;
+            font-size:0.71rem;font-weight:700;
+            background:var(--input-bg);
+            border:1px solid var(--border);
+            color:var(--text2);
+        }
+        .lang-badge{
+            display:inline-flex;align-items:center;gap:3px;
+            padding:3px 9px;border-radius:20px;
+            font-size:0.71rem;font-weight:600;
+            background:var(--input-bg);
+            border:1px solid var(--border);
+            color:var(--text2);
+        }
+
+        /* Threat tags inside bubble */
+        .threat-row{margin-top:7px;display:flex;flex-wrap:wrap;gap:4px;}
+        .ttag{
+            display:inline-block;
+            background:#fff0f0;border:1px solid #ffcdd2;
+            color:#c0392b;border-radius:9px;
+            padding:2px 7px;font-size:0.7rem;font-weight:600;
+        }
+
+        /* Warning banner */
+        .warn-banner{
+            background:#fff8f0;border:1.5px solid #e67e22;
+            border-radius:8px;padding:7px 11px;
+            margin-top:8px;font-size:0.77rem;color:#b7560a;
+            display:flex;align-items:flex-start;gap:6px;
+        }
+        body.dark .warn-banner{background:#1a0f00;color:#ffa040;}
+
+        /* Shield animation overlay on threat */
+        @keyframes shieldPop{
+            0%{transform:scale(0.5);opacity:0;}
+            60%{transform:scale(1.2);opacity:1;}
+            100%{transform:scale(1);opacity:1;}
+        }
+        .shield-pop{animation:shieldPop 0.4s ease forwards;}
+
+        /* Typing */
+        .typing-wrap{display:flex;gap:8px;align-items:flex-start;}
+        .typing-b{background:var(--card);border:1.5px solid var(--border);padding:10px 13px;border-radius:4px 15px 15px 15px;display:flex;gap:4px;align-items:center;}
+        .td{width:6px;height:6px;background:#4a9eff;border-radius:50%;animation:tB 1.2s infinite;}
+        .td:nth-child(2){animation-delay:0.2s;}
+        .td:nth-child(3){animation-delay:0.4s;}
+        @keyframes tB{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}
+
+        .chat-input-area{background:var(--card);border-top:2px solid var(--border);padding:10px 20px;display:flex;gap:8px;align-items:center;flex-shrink:0;}
+        .chat-input{flex:1;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:0.9rem;outline:none;font-family:inherit;transition:all 0.3s;}
+        .chat-input:focus{border-color:#1a5cd4;box-shadow:0 0 0 3px rgba(26,92,212,0.1);background:var(--card);}
+        .chat-send{padding:10px 17px;background:linear-gradient(135deg,#1a5cd4,#4a9eff);color:#fff;border:none;border-radius:10px;font-size:0.9rem;cursor:pointer;font-weight:700;transition:opacity 0.3s;white-space:nowrap;box-shadow:0 3px 10px rgba(26,92,212,0.3);}
+        .chat-send:hover{opacity:0.88;}
+
+        /* ══ DETECT PAGE ══ */
+        .detect-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;}
+        textarea{width:100%;height:140px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;color:var(--text);padding:12px;font-size:0.9rem;resize:none;outline:none;transition:all 0.3s;font-family:inherit;}
+        textarea:focus{border-color:#1a5cd4;background:var(--card);box-shadow:0 0 0 3px rgba(26,92,212,0.1);}
+        textarea::placeholder{color:#9ab0d0;}
+        .btn-analyze{margin-top:10px;width:100%;padding:11px;background:linear-gradient(135deg,#1a5cd4,#4a9eff);color:#fff;border:none;border-radius:9px;font-size:0.92rem;cursor:pointer;font-weight:700;transition:opacity 0.3s;}
+        .btn-analyze:hover{opacity:0.88;}
+        .btn-analyze:disabled{opacity:0.6;cursor:not-allowed;}
+        .rbar{margin-top:6px;height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+        .rfill{height:100%;width:0%;background:linear-gradient(90deg,#1a5cd4,#4a9eff);transition:width 0.3s;}
+        .result-box{display:none;border-radius:10px;padding:15px;}
+        .result-box.safe{background:var(--card);border:2px solid #1db954;}
+        .result-box.danger{background:var(--card);border:2px solid #e74c3c;}
+        .result-box.warning{background:var(--card);border:2px solid #e67e22;}
+        .rv-title{font-size:0.95rem;font-weight:800;margin-bottom:11px;padding-bottom:9px;border-bottom:1px solid var(--border);}
+        .result-box.safe .rv-title{color:#1db954;}
+        .result-box.danger .rv-title{color:#e74c3c;}
+        .result-box.warning .rv-title{color:#e67e22;}
+        .rrow{display:flex;justify-content:space-between;padding:6px 0;font-size:0.82rem;border-bottom:1px solid var(--border);}
+        .rrow .rl{color:var(--text2);font-weight:600;}
+        .rrow .rv{color:var(--text);font-weight:600;max-width:55%;text-align:right;word-break:break-word;}
+        .mt-lbl{font-size:0.73rem;color:var(--text2);font-weight:700;margin-top:10px;text-transform:uppercase;letter-spacing:0.5px;}
+        .mtag{display:inline-block;background:#fff0f0;border:1px solid #e74c3c;color:#c0392b;border-radius:20px;padding:2px 8px;font-size:0.7rem;margin:3px 2px 0 0;font-weight:600;}
+        .copy-btn{margin-top:11px;width:100%;padding:7px;background:transparent;border:1.5px solid #1a5cd4;color:#1a5cd4;border-radius:7px;cursor:pointer;font-size:0.79rem;font-weight:700;transition:all 0.3s;}
+        .copy-btn:hover{background:#1a5cd4;color:#fff;}
+
+        /* ══ STATS PAGE ══ */
+        .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:15px;}
+        .stat-box{background:var(--card);border:1.5px solid var(--border);border-radius:11px;padding:15px;text-align:center;box-shadow:0 2px 10px var(--shadow);position:relative;overflow:hidden;}
+        .stat-box::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;}
+        .sb-blue::before{background:linear-gradient(90deg,#1a5cd4,#4a9eff);}
+        .sb-red::before{background:linear-gradient(90deg,#e74c3c,#ff6b6b);}
+        .sb-green::before{background:linear-gradient(90deg,#1db954,#2ecc71);}
+        .stat-icon{font-size:1.3rem;margin-bottom:2px;}
+        .stat-num{font-size:1.9rem;font-weight:800;margin-top:2px;}
+        .stat-label{color:var(--text2);font-size:0.74rem;margin-top:3px;font-weight:600;}
+        .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+        .chart-box{background:var(--card);border:1.5px solid var(--border);border-radius:11px;padding:14px;box-shadow:0 2px 10px var(--shadow);}
+        .chart-title{font-size:0.76rem;font-weight:700;color:#1a5cd4;margin-bottom:9px;text-transform:uppercase;letter-spacing:0.5px;}
+
+        /* ══ HISTORY PAGE ══ */
+        .hi{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px 15px;margin-bottom:8px;border-left:5px solid var(--border);box-shadow:0 2px 8px var(--shadow);transition:all 0.2s;}
+        .hi:hover{box-shadow:0 4px 14px var(--shadow);transform:translateY(-1px);}
+        .hi.injection{border-left-color:#e74c3c;}
+        .hi.safe-i{border-left-color:#1db954;}
+        .hi-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+        .hi-text{color:var(--text);font-size:0.84rem;flex:1;font-weight:500;}
+        .bpill{padding:3px 10px;border-radius:20px;font-size:0.67rem;font-weight:800;white-space:nowrap;}
+        .bp-danger{background:#fff0f0;color:#c0392b;border:1.5px solid #e74c3c;}
+        .bp-safe{background:#f0fff4;color:#1a8a3c;border:1.5px solid #1db954;}
+        .hi-meta{color:var(--text2);font-size:0.7rem;margin-top:5px;}
+        .hi-tags{margin-top:5px;display:flex;flex-wrap:wrap;gap:3px;}
+        .htag{background:#fff0f0;border:1px solid #ffcdd2;color:#c0392b;border-radius:8px;padding:1px 6px;font-size:0.67rem;font-weight:600;}
+
+        /* ══ PROFILE PAGE ══ */
+        .profile-hero{background:linear-gradient(135deg,#1a5cd4,#0d1b3e);border-radius:13px;padding:20px;margin-bottom:13px;display:flex;align-items:center;gap:15px;position:relative;overflow:hidden;}
+        .ph-bg{position:absolute;right:-20px;top:-20px;width:110px;height:110px;background:rgba(255,255,255,0.05);border-radius:50%;}
+        .p-avatar{width:58px;height:58px;background:rgba(255,255,255,0.18);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;position:relative;z-index:1;border:2px solid rgba(255,255,255,0.25);}
+        .p-info{position:relative;z-index:1;}
+        .p-name{font-size:1.05rem;font-weight:800;color:#fff;}
+        .p-email{color:#a0c0ff;font-size:0.79rem;margin-top:2px;}
+        .p-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(29,185,84,0.18);border:1px solid #1db954;color:#1db954;border-radius:20px;padding:2px 8px;font-size:0.68rem;font-weight:700;margin-top:5px;}
+        .prow{display:flex;justify-content:space-between;padding:10px 0;font-size:0.84rem;border-bottom:1px solid var(--border);}
+        .prow:last-child{border-bottom:none;}
+        .prow .pk{color:var(--text2);font-weight:700;}
+        .prow .pv{color:var(--text);font-weight:600;}
+
+        /* BUTTONS */
+        .btn-pdf{padding:7px 14px;background:linear-gradient(135deg,#1a5cd4,#4a9eff);border:none;color:#fff;border-radius:7px;cursor:pointer;font-size:0.79rem;font-weight:700;transition:opacity 0.3s;}
+        .btn-pdf:hover{opacity:0.88;}
+        .btn-red{padding:7px 14px;background:transparent;border:2px solid #e74c3c;color:#e74c3c;border-radius:7px;cursor:pointer;font-size:0.79rem;font-weight:700;transition:all 0.3s;}
+        .btn-red:hover{background:#e74c3c;color:#fff;}
+
+        .empty{text-align:center;color:var(--text2);padding:40px;font-size:0.88rem;}
+
+        /* TOAST */
+        .toast{position:fixed;bottom:18px;right:18px;background:#0d1b3e;color:#fff;padding:10px 16px;border-radius:10px;font-size:0.82rem;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.2);display:none;z-index:9998;border-left:4px solid #4a9eff;animation:sIn 0.3s ease;}
+        @keyframes sIn{from{transform:translateX(100px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+        @keyframes pIn{from{transform:scale(0.8);opacity:0;}to{transform:scale(1);opacity:1;}}
+        ::-webkit-scrollbar{width:5px;}
+        ::-webkit-scrollbar-track{background:transparent;}
+        ::-webkit-scrollbar-thumb{background:#c0d0ff;border-radius:3px;}
+    </style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<!-- AUTH -->
+<div class="auth-page" id="auth-page">
+    <div class="bg-shape bs1"></div>
+    <div class="bg-shape bs2"></div>
+    <div class="bg-shape bs3"></div>
+    <div class="auth-card">
+        <div class="auth-logo">
+            <div class="auth-logo-icon">🛡️</div>
+            <h1>InjectionGuard</h1>
+            <p>AI-Powered Multilingual Content Safety</p>
+        </div>
+        <div class="auth-tabs">
+            <div class="auth-tab active" onclick="switchAuth('login',this)">🔐 Login</div>
+            <div class="auth-tab" onclick="switchAuth('signup',this)">🚀 Sign Up</div>
+        </div>
+        <div id="login-form">
+            <div class="error-msg" id="login-error"></div>
+            <div class="form-group"><label>Username</label><input type="text" id="login-username" placeholder="Enter username"></div>
+            <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="Enter password"></div>
+            <button class="btn-primary" onclick="login()">🔐 Login</button>
+        </div>
+        <div id="signup-form" style="display:none;">
+            <div class="error-msg" id="signup-error"></div>
+            <div class="success-msg" id="signup-success"></div>
+            <div class="form-group"><label>Username</label><input type="text" id="signup-username" placeholder="Choose username"></div>
+            <div class="form-group"><label>Email</label><input type="email" id="signup-email" placeholder="Enter email"></div>
+            <div class="form-group"><label>Password</label><input type="password" id="signup-password" placeholder="Choose password"></div>
+            <button class="btn-primary" onclick="signup()">🚀 Create Account</button>
+        </div>
+    </div>
+</div>
+
+<!-- APP -->
+<div class="app-page" id="app-page">
+    <div class="navbar">
+        <div class="nb-brand">
+            <div class="nb-icon">🛡️</div>
+            <span class="nb-text">InjectionGuard</span>
+        </div>
+        <div class="nb-right">
+            <div class="user-badge"><span>👤</span><span id="navbar-username"></span></div>
+            <button class="theme-btn" onclick="toggleTheme()" title="Toggle Theme"></button>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="layout">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sb-brand">
+                <div class="sb-brand-icon">🛡️</div>
+                <span class="sb-brand-text">InjectionGuard</span>
+            </div>
+            <div class="sb-menu-label">Menu</div>
+            <div class="sb-item active" onclick="showPage('chat',this)"><span class="sb-icon">💬</span>Chat</div>
+            <div class="sb-item" onclick="showPage('detect',this)"><span class="sb-icon">🔍</span>Detect</div>
+            <div class="sb-item" onclick="showPage('stats',this)"><span class="sb-icon">📊</span>Statistics</div>
+            <div class="sb-item" onclick="showPage('history',this)"><span class="sb-icon">🕒</span>History</div>
+            <div class="sb-item" onclick="showPage('profile',this)"><span class="sb-icon">👤</span>Profile</div>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="content">
+
+            <!-- CHAT PAGE -->
+            <div class="content-page active" id="content-chat">
+                <div class="chat-hero">
+                    <div class="chat-hero-inner">
+                        <h2>🛡️ InjectionGuard AI Chat</h2>
+                        <p>Every message is scanned — safety badge &amp; confidence shown on every reply</p>
+                        <div class="hero-badges">
+                            <span class="hbadge">🛡️ Protection Guard</span>
+                            <span class="hbadge">🔍 Every Message Scanned</span>
+                            <span class="hbadge">🌐 Multilingual</span>
+                            <span class="hbadge">🎯 Confidence Score</span>
+                            <span class="hbadge">🤖 LLaMA 3</span>
+                        </div>
+                    </div>
+                    <div class="hero-deco">
+                        <div class="hdc hdc1"></div>
+                        <div class="hdc hdc2"></div>
+                        <div class="hdc hdc3"></div>
+                    </div>
+                </div>
+                <div class="chat-msgs" id="chat-msgs">
+                    <div class="chat-welcome" id="chat-welcome">
+                        <div class="w-icon">🛡️</div>
+                        <div class="w-title">InjectionGuard Protection Active</div>
+                        <div class="w-sub">Every message is scanned in real-time.<br>
+                            <span style="color:#1db954;font-weight:700;">🟢 Green border</span> = Safe &nbsp;|&nbsp;
+                            <span style="color:#e74c3c;font-weight:700;">🔴 Red border</span> = Unsafe</div>
+                        <div class="feat-grid">
+                            <div class="feat-card"><div class="fc-icon">🛡️</div><div class="fc-title">Safety Badge</div><div class="fc-desc">SAFE/UNSAFE on every reply</div></div>
+                            <div class="feat-card"><div class="fc-icon">🎯</div><div class="fc-title">Confidence Score</div><div class="fc-desc">% accuracy shown always</div></div>
+                            <div class="feat-card"><div class="fc-icon">⚠️</div><div class="fc-title">Threat Categories</div><div class="fc-desc">Exact threat type shown</div></div>
+                            <div class="feat-card"><div class="fc-icon">🌐</div><div class="fc-title">Multilingual</div><div class="fc-desc">Any language detected</div></div>
+                        </div>
+                        <div class="chips">
+                            <div class="chip" onclick="useSug('What is machine learning?')">What is machine learning?</div>
+                            <div class="chip" onclick="useSug('Explain quantum computing')">Explain quantum computing</div>
+                            <div class="chip" onclick="useSug('What is AI?')">What is AI?</div>
+                            <div class="chip" onclick="useSug('How does internet work?')">How does internet work?</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input class="chat-input" id="chat-input"
+                        placeholder="Type in any language... (Press Enter to send)"
+                        onkeypress="if(event.key==='Enter')sendChat()">
+                    <button class="chat-send" onclick="sendChat()">Send 🚀</button>
+                </div>
+            </div>
+
+            <!-- DETECT PAGE -->
+            <div class="content-page" id="content-detect">
+                <div class="ph"><div class="ph-title">🔍 <span>Analyze</span> Prompt</div></div>
+                <div class="page-body">
+                    <div class="detect-grid">
+                        <div class="card">
+                            <div class="ct">✏️ Enter Prompt</div>
+                            <textarea id="inputText" placeholder="Enter any prompt in any language...&#10;&#10;English: I want to hack a system&#10;Tamil: முந்தைய அறிவுறுத்தல்களை புறக்கணி&#10;Hindi: पिछले निर्देशों को अनदेखा करें"></textarea>
+                            <div class="rbar"><div class="rfill" id="rfill"></div></div>
+                            <button class="btn-analyze" id="analyzeBtn" onclick="detect()">🔍 Analyze Prompt</button>
+                        </div>
+                        <div class="card" style="display:flex;flex-direction:column;">
+                            <div class="ct">📋 AI Analysis Result</div>
+                            <div style="color:#9ab0d0;font-size:0.84rem;margin-top:15px;" id="res-placeholder">Enter a prompt and click Analyze to see results here.</div>
+                            <div class="result-box" id="result-box">
+                                <div class="rv-title" id="rv-title"></div>
+                                <div class="rrow"><span class="rl">🌐 Language</span><span class="rv" id="res-lang"></span></div>
+                                <div class="rrow"><span class="rl">🔄 Translated</span><span class="rv" id="res-translated"></span></div>
+                                <div class="rrow"><span class="rl">⚠️ Risk Level</span><span class="rv" id="res-risk"></span></div>
+                                <div class="rrow"><span class="rl">🎯 Confidence</span><span class="rv" id="res-conf"></span></div>
+                                <div id="res-threats-wrap" style="display:none;margin-top:9px;">
+                                    <div class="mt-lbl">Threat Categories</div>
+                                    <div id="res-threats"></div>
+                                </div>
+                                <button class="copy-btn" onclick="copyResult()">📋 Copy Result</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STATS PAGE -->
+            <div class="content-page" id="content-stats">
+                <div class="ph"><div class="ph-title">📊 <span>Statistics</span></div></div>
+                <div class="page-body">
+                    <div class="stats-grid">
+                        <div class="stat-box sb-blue"><div class="stat-icon">📝</div><div class="stat-num" id="stat-total" style="color:#1a5cd4;">0</div><div class="stat-label">Total Analyzed</div></div>
+                        <div class="stat-box sb-red"><div class="stat-icon">🚨</div><div class="stat-num" id="stat-injections" style="color:#e74c3c;">0</div><div class="stat-label">Threats Detected</div></div>
+                        <div class="stat-box sb-green"><div class="stat-icon">✅</div><div class="stat-num" id="stat-safe" style="color:#1db954;">0</div><div class="stat-label">Safe Prompts</div></div>
+                    </div>
+                    <div class="charts-grid">
+                        <div class="chart-box"><div class="chart-title">📈 Detection History</div><canvas id="historyChart" height="200"></canvas></div>
+                        <div class="chart-box"><div class="chart-title">🥧 Risk Breakdown</div><canvas id="riskChart" height="200"></canvas></div>
+                        <div class="chart-box"><div class="chart-title">🌐 Language Breakdown</div><canvas id="langChart" height="200"></canvas></div>
+                        <div class="chart-box"><div class="chart-title">📅 Daily Detections</div><canvas id="dailyChart" height="200"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HISTORY PAGE -->
+            <div class="content-page" id="content-history">
+                <div class="ph">
+                    <div class="ph-title">🕒 <span>History</span></div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn-pdf" onclick="downloadReport()">📄 PDF Report</button>
+                        <button class="btn-red" onclick="clearHistory()">🗑️ Clear All</button>
+                    </div>
+                </div>
+                <div class="page-body" id="history-list"></div>
+            </div>
+
+            <!-- PROFILE PAGE -->
+            <div class="content-page" id="content-profile">
+                <div class="ph"><div class="ph-title">👤 <span>Profile</span></div></div>
+                <div class="page-body">
+                    <div class="profile-hero">
+                        <div class="ph-bg"></div>
+                        <div class="p-avatar">👤</div>
+                        <div class="p-info">
+                            <div class="p-name" id="profile-name"></div>
+                            <div class="p-email" id="profile-email"></div>
+                            <div class="p-badge">● Active Account</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="ct">Account Information</div>
+                        <div class="prow"><span class="pk">👤 Username</span><span class="pv" id="info-username"></span></div>
+                        <div class="prow"><span class="pk">📧 Email</span><span class="pv" id="info-email"></span></div>
+                        <div class="prow"><span class="pk">🛡️ Status</span><span class="pv" style="color:#1db954;">● Active</span></div>
+                        <div class="prow"><span class="pk">🤖 AI Model</span><span class="pv">LLaMA 3.3 (Groq)</span></div>
+                        <div class="prow"><span class="pk">🌐 Languages</span><span class="pv">All Languages</span></div>
+                        <div class="prow"><span class="pk">🔍 Detection Models</span><span class="pv">3 AI Models Stacked</span></div>
+                        <div class="prow"><span class="pk">🛡️ Protection</span><span class="pv" style="color:#1db954;">● Always Active</span></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+const API="http://127.0.0.1:8000";
+let currentUser=null,charts={},rtTimer=null,lastResult=null;
+
+if(localStorage.getItem('theme')==='dark') document.body.classList.add('dark');
+function toggleTheme(){
+    document.body.classList.toggle('dark');
+    localStorage.setItem('theme',document.body.classList.contains('dark')?'dark':'light');
+    destroyCharts(); loadCharts();
+}
+
+try{const s=localStorage.getItem("user");if(s){currentUser=JSON.parse(s);showApp();}}catch(e){}
+
+function showToast(msg,color='#4a9eff'){
+    const t=document.getElementById('toast');
+    t.textContent=msg; t.style.borderLeftColor=color;
+    t.style.display='block';
+    setTimeout(()=>t.style.display='none',3500);
+}
+
+function switchAuth(tab,el){
+    document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('login-form').style.display=tab==='login'?'block':'none';
+    document.getElementById('signup-form').style.display=tab==='signup'?'block':'none';
+}
+
+async function login(){
+    const u=document.getElementById('login-username').value.trim();
+    const p=document.getElementById('login-password').value.trim();
+    if(!u||!p){showErr('login-error','Please fill all fields!');return;}
+    try{
+        const res=await fetch(`${API}/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+        const d=await res.json();
+        if(!res.ok){showErr('login-error',d.detail);return;}
+        currentUser=d.user; localStorage.setItem('user',JSON.stringify(currentUser)); showApp();
+    }catch{showErr('login-error','Cannot connect! Is backend running?');}
+}
+
+async function signup(){
+    const u=document.getElementById('signup-username').value.trim();
+    const e=document.getElementById('signup-email').value.trim();
+    const p=document.getElementById('signup-password').value.trim();
+    if(!u||!e||!p){showErr('signup-error','Please fill all fields!');return;}
+    try{
+        const res=await fetch(`${API}/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,email:e,password:p})});
+        const d=await res.json();
+        if(!res.ok){showErr('signup-error',d.detail);return;}
+        const s=document.getElementById('signup-success');
+        s.textContent='✅ Account created! Please login.'; s.style.display='block';
+        setTimeout(()=>{s.style.display='none';switchAuth('login',document.querySelector('.auth-tab'));},1800);
+    }catch{showErr('signup-error','Cannot connect!');}
+}
+
+function logout(){
+    localStorage.removeItem('user'); currentUser=null;
+    document.getElementById('app-page').classList.remove('show');
+    document.getElementById('auth-page').style.display='flex';
+    showToast('Logged out!');
+}
+
+function showApp(){
+    document.getElementById('auth-page').style.display='none';
+    document.getElementById('app-page').classList.add('show');
+    ['navbar-username','profile-name','info-username'].forEach(id=>document.getElementById(id).textContent=currentUser.username);
+    ['profile-email','info-email'].forEach(id=>document.getElementById(id).textContent=currentUser.email);
+}
+
+function showErr(id,msg){
+    const el=document.getElementById(id);
+    el.textContent=msg; el.style.display='block';
+    setTimeout(()=>el.style.display='none',3500);
+}
+
+function showPage(page,el){
+    document.querySelectorAll('.content-page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.sb-item').forEach(s=>s.classList.remove('active'));
+    document.getElementById('content-'+page).classList.add('active');
+    el.classList.add('active');
+    if(page==='stats'){loadStats();loadCharts();}
+    if(page==='history')loadHistory();
+}
+
+// REALTIME DETECT
+document.addEventListener('DOMContentLoaded',()=>{
+    const ta=document.getElementById('inputText');
+    if(ta){ta.addEventListener('input',()=>{
+        clearTimeout(rtTimer);
+        const fill=document.getElementById('rfill');
+        fill.style.width='30%';
+        rtTimer=setTimeout(async()=>{
+            const text=ta.value.trim();
+            if(text.length<10){fill.style.width='0%';ta.style.borderColor='';return;}
+            fill.style.width='70%';
+            try{
+                const res=await fetch(`${API}/detect`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+                const json=await res.json(); const d=json.data;
+                fill.style.width='100%'; setTimeout(()=>fill.style.width='0%',500);
+                ta.style.borderColor=d.is_injection?'#e74c3c':'#1db954';
+            }catch{fill.style.width='0%';}
+        },1500);
+    });}
+});
+
+// DETECT PAGE
+async function detect(){
+    const text=document.getElementById('inputText').value.trim();
+    if(!text){showToast('Please enter a prompt!','#e74c3c');return;}
+    const btn=document.getElementById('analyzeBtn');
+    btn.textContent='⏳ Analyzing...'; btn.disabled=true;
+    try{
+        const res=await fetch(`${API}/detect`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+        const json=await res.json(); const data=json.data; lastResult=data;
+        document.getElementById('res-placeholder').style.display='none';
+        const box=document.getElementById('result-box');
+        const cls=data.is_injection?(data.risk_level==='CRITICAL'||data.risk_level==='HIGH'?'danger':'warning'):'safe';
+        box.style.display='block'; box.className='result-box '+cls;
+        const labels={safe:'✅ SAFE CONTENT',warning:'⚠️ POTENTIAL THREAT',danger:'🚨 THREAT DETECTED!'};
+        document.getElementById('rv-title').textContent=labels[cls];
+        document.getElementById('res-lang').textContent=data.detected_language||'-';
+        document.getElementById('res-translated').textContent=data.translated_text||'-';
+        document.getElementById('res-risk').textContent=data.risk_level||'-';
+        document.getElementById('res-conf').textContent=(data.confidence||0)+'%';
+        const tw=document.getElementById('res-threats-wrap'),td=document.getElementById('res-threats');
+        if(data.threat_types&&data.threat_types.length>0){tw.style.display='block';td.innerHTML=data.threat_types.map(t=>`<span class="mtag">${t}</span>`).join('');}
+        else tw.style.display='none';
+        document.getElementById('inputText').style.borderColor='';
+        showToast(data.is_injection?'⚠️ Threat detected!':'✅ Safe content',data.is_injection?'#e74c3c':'#1db954');
+    }catch{showToast('Error: Backend not running!','#e74c3c');}
+    btn.textContent='🔍 Analyze Prompt'; btn.disabled=false;
+}
+
+function copyResult(){
+    if(!lastResult)return;
+    const txt=`InjectionGuard Result\n${'─'.repeat(28)}\nVerdict:    ${lastResult.is_injection?'⚠️ THREAT':'✅ SAFE'}\nLanguage:   ${lastResult.detected_language}\nRisk:       ${lastResult.risk_level}\nConfidence: ${lastResult.confidence}%\nThreats:    ${lastResult.threat_types?.join(', ')||'None'}`;
+    navigator.clipboard.writeText(txt);
+    showToast('✅ Copied!','#1db954');
+}
+
+// ── CHAT ──
+function useSug(text){document.getElementById('chat-input').value=text;sendChat();}
+
+// Helper: pick avatar class + icon based on risk
+function getAvatar(isUnsafe, riskLevel){
+    if(!isUnsafe) return {cls:'mb-av-safe', icon:'🛡️'};
+    if(riskLevel==='CRITICAL'||riskLevel==='HIGH') return {cls:'mb-av-danger', icon:'🚨'};
+    return {cls:'mb-av-warn', icon:'⚠️'};
+}
+
+// Helper: pick bubble border class
+function getBubbleCls(isUnsafe, riskLevel){
+    if(!isUnsafe) return 'b-safe';
+    if(riskLevel==='CRITICAL'||riskLevel==='HIGH') return 'b-danger';
+    return 'b-warn';
+}
+
+// Helper: safety badge HTML
+function safeBadge(isUnsafe, riskLevel){
+    if(!isUnsafe)
+        return `<span class="safety-badge sb-safe">🛡️ SAFE</span>`;
+    if(riskLevel==='CRITICAL'||riskLevel==='HIGH')
+        return `<span class="safety-badge sb-unsafe">🚨 UNSAFE — ${riskLevel}</span>`;
+    return `<span class="safety-badge sb-medium">⚠️ WARNING — ${riskLevel}</span>`;
+}
+
+// Helper: confidence badge
+function confBadge(conf){
+    return `<span class="conf-badge">🎯 ${conf}% confidence</span>`;
+}
+
+// Helper: language badge
+function langBadge(lang){
+    return `<span class="lang-badge">🌐 ${lang}</span>`;
+}
+
+// Helper: threat tags
+function threatTags(types){
+    if(!types||types.length===0) return '';
+    return `<div class="threat-row">${types.map(t=>`<span class="ttag">${t}</span>`).join('')}</div>`;
+}
+
+// Helper: warning banner
+function warnBannerHTML(riskLevel, types){
+    const msg={
+        CRITICAL:'🚨 CRITICAL risk content detected! This message contains extremely harmful material.',
+        HIGH:'🔴 HIGH risk content detected! This message contains harmful content.',
+        MEDIUM:'🟡 MEDIUM risk content detected. This message may contain inappropriate content.',
+        LOW:'🟠 LOW risk signal detected. Proceed with caution.'
+    };
+    return `<div class="warn-banner">
+        <span style="font-size:1.1rem;flex-shrink:0;">🛡️</span>
+        <div><b>InjectionGuard Alert:</b> ${msg[riskLevel]||'Potentially unsafe content detected.'}</div>
+    </div>`;
+}
+
+async function sendChat(){
+    const input=document.getElementById('chat-input');
+    const text=input.value.trim();
+    if(!text)return;
+    input.value='';
+    const msgs=document.getElementById('chat-msgs');
+    const w=document.getElementById('chat-welcome');
+    if(w) w.style.display='none';
+
+    // User bubble
+    msgs.innerHTML+=`<div class="mb-user"><div class="mb-user-b">${esc(text)}</div></div>`;
+
+    // Typing indicator
+    const tid='t_'+Date.now();
+    msgs.innerHTML+=`
+        <div class="typing-wrap" id="${tid}">
+            <div class="mb-av-safe">🛡️</div>
+            <div class="typing-b">
+                <div class="td"></div><div class="td"></div><div class="td"></div>
+            </div>
+        </div>`;
+    msgs.scrollTop=msgs.scrollHeight;
+
+    try{
+        const res=await fetch(`${API}/chat`,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({text})
+        });
+        const data=await res.json();
+        document.getElementById(tid)?.remove();
+
+        const isUnsafe  = data.has_warning || false;
+        const riskLevel = data.risk_level  || 'SAFE';
+        const conf      = data.confidence  || 0;
+        const lang      = data.detected_language || '-';
+        const types     = data.threat_types || [];
+
+        const av  = getAvatar(isUnsafe, riskLevel);
+        const bCls= getBubbleCls(isUnsafe, riskLevel);
+
+        // Build the full AI bubble
+        msgs.innerHTML+=`
+            <div class="mb-ai">
+                <div class="${av.cls} shield-pop">${av.icon}</div>
+                <div class="mb-ai-b ${bCls}">
+                    ${data.message.replace(/\n/g,'<br>')}
+
+                    ${isUnsafe ? warnBannerHTML(riskLevel, types) : ''}
+                    ${isUnsafe ? threatTags(types) : ''}
+
+                    <div class="safety-row">
+                        ${safeBadge(isUnsafe, riskLevel)}
+                        ${confBadge(conf)}
+                        ${langBadge(lang)}
+                    </div>
+                </div>
+            </div>`;
+
+        // Show toast
+        if(isUnsafe){
+            showToast(`⚠️ ${riskLevel} risk content detected!`,'#e74c3c');
+            // Show popup for HIGH/CRITICAL
+            if(riskLevel==='CRITICAL'||riskLevel==='HIGH'){
+                showPopup(types, riskLevel, conf);
+            }
+        } else {
+            showToast('✅ Safe content','#1db954');
+        }
+
+    }catch{
+        document.getElementById(tid)?.remove();
+        msgs.innerHTML+=`<div style="text-align:center;color:#e74c3c;font-size:0.8rem;padding:8px;">❌ Error: Backend not running!</div>`;
+    }
+    msgs.scrollTop=msgs.scrollHeight;
+}
+
+function esc(t){
+    return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// POPUP for HIGH/CRITICAL
+function showPopup(threatTypes,riskLevel,confidence){
+    const rc={CRITICAL:'#e74c3c',HIGH:'#e67e22',MEDIUM:'#f39c12',LOW:'#3498db'};
+    const color=rc[riskLevel]||'#e74c3c';
+    const overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML=`
+        <div style="background:white;border-radius:20px;padding:30px 26px;max-width:420px;width:90%;text-align:center;border-top:6px solid ${color};box-shadow:0 24px 60px rgba(0,0,0,0.4);animation:pIn 0.3s ease;">
+            <div style="width:70px;height:70px;margin:0 auto 12px;background:${color}18;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.2rem;border:3px solid ${color}33;">🚨</div>
+            <div style="font-size:1.2rem;font-weight:800;color:#0d1b3e;margin-bottom:7px;">Harmful Content Detected!</div>
+            <div style="background:${color}15;border:2px solid ${color};color:${color};padding:6px 16px;border-radius:20px;font-weight:800;font-size:0.9rem;display:inline-block;margin-bottom:16px;">
+                ${riskLevel} RISK &nbsp;·&nbsp; ${confidence}% Confidence
+            </div>
+            <div style="margin-bottom:16px;text-align:left;">
+                <div style="font-size:0.72rem;color:#6b8cba;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Threat Categories:</div>
+                ${threatTypes?.map(t=>`
+                    <div style="background:#fff5f5;border:1.5px solid #ffcdd2;color:#c0392b;border-radius:8px;padding:6px 12px;margin:3px 0;font-size:0.83rem;font-weight:600;display:flex;align-items:center;gap:6px;">
+                        <span>⚠️</span>${t}
+                    </div>`).join('')||'<div style="color:#6b8cba;font-size:0.83rem;">Unknown threat</div>'}
+            </div>
+            <p style="color:#6b8cba;font-size:0.78rem;margin-bottom:20px;line-height:1.6;">
+                This message has been <b style="color:#e74c3c;">flagged and logged</b> for security review.
+            </p>
+            <button onclick="this.closest('[style*=fixed]').remove()" style="padding:11px 0;width:100%;background:linear-gradient(135deg,#1a5cd4,#4a9eff);color:#fff;border:none;border-radius:10px;font-size:0.91rem;cursor:pointer;font-weight:700;">
+                ✓ OK, I Understand
+            </button>
+        </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+}
+
+// STATS
+async function loadStats(){
+    try{
+        const res=await fetch(`${API}/stats`); const d=await res.json();
+        document.getElementById('stat-total').textContent=d.total_checked;
+        document.getElementById('stat-injections').textContent=d.injections_found;
+        document.getElementById('stat-safe').textContent=d.safe_prompts;
+    }catch{}
+}
+
+function destroyCharts(){Object.values(charts).forEach(c=>{if(c)c.destroy();});charts={};}
+
+async function loadCharts(){
+    try{
+        const res=await fetch(`${API}/chart-data`); const data=await res.json();
+        const dark=document.body.classList.contains('dark');
+        const gc=dark?'#1a3a6e':'#e8eeff', tc=dark?'#6b8cba':'#9ab0d0';
+        destroyCharts();
+
+        const h=document.getElementById('historyChart')?.getContext('2d');
+        if(h) charts.h=new Chart(h,{type:'bar',data:{
+            labels:data.confidence_data.map((_,i)=>`#${i+1}`),
+            datasets:[{label:'Confidence %',
+                data:data.confidence_data.map(d=>d.confidence),
+                backgroundColor:data.confidence_data.map(d=>d.is_injection?'rgba(231,76,60,0.75)':'rgba(29,185,84,0.75)'),
+                borderRadius:5,borderSkipped:false}]
+        },options:{plugins:{legend:{labels:{color:tc,font:{size:10}}}},scales:{x:{ticks:{color:tc},grid:{color:gc}},y:{ticks:{color:tc},grid:{color:gc},min:0,max:100}}}});
+
+        const r=document.getElementById('riskChart')?.getContext('2d');
+        if(r&&Object.keys(data.risk_breakdown).length>0){
+            const rc={CRITICAL:'#e74c3c',HIGH:'#e67e22',MEDIUM:'#f1c40f',LOW:'#3498db',SAFE:'#1db954'};
+            charts.r=new Chart(r,{type:'doughnut',data:{
+                labels:Object.keys(data.risk_breakdown),
+                datasets:[{data:Object.values(data.risk_breakdown),
+                    backgroundColor:Object.keys(data.risk_breakdown).map(k=>rc[k]||'#6b8cba'),
+                    borderWidth:3,borderColor:dark?'#0d1b3e':'#fff'}]
+            },options:{plugins:{legend:{labels:{color:tc,font:{size:10}}}},cutout:'65%'}});
+        }
+
+        const l=document.getElementById('langChart')?.getContext('2d');
+        if(l&&Object.keys(data.language_breakdown).length>0)
+            charts.l=new Chart(l,{type:'bar',data:{
+                labels:Object.keys(data.language_breakdown),
+                datasets:[{label:'Detections',
+                    data:Object.values(data.language_breakdown),
+                    backgroundColor:'rgba(74,158,255,0.75)',
+                    borderRadius:5,borderSkipped:false}]
+            },options:{plugins:{legend:{labels:{color:tc,font:{size:10}}}},scales:{x:{ticks:{color:tc},grid:{color:gc}},y:{ticks:{color:tc},grid:{color:gc}}}}});
+
+        const d2=document.getElementById('dailyChart')?.getContext('2d');
+        if(d2&&Object.keys(data.daily_detections).length>0)
+            charts.d=new Chart(d2,{type:'line',data:{
+                labels:Object.keys(data.daily_detections),
+                datasets:[{label:'Detections',
+                    data:Object.values(data.daily_detections),
+                    borderColor:'#4a9eff',backgroundColor:'rgba(74,158,255,0.1)',
+                    tension:0.4,fill:true,pointRadius:5,
+                    pointBackgroundColor:'#1a5cd4',pointBorderColor:'#fff',pointBorderWidth:2}]
+            },options:{plugins:{legend:{labels:{color:tc,font:{size:10}}}},scales:{x:{ticks:{color:tc},grid:{color:gc}},y:{ticks:{color:tc},grid:{color:gc}}}}});
+
+    }catch(e){console.error(e);}
+}
+
+// HISTORY
+async function loadHistory(){
+    try{
+        const res=await fetch(`${API}/history`); const data=await res.json();
+        const list=document.getElementById('history-list');
+        if(!data.length){list.innerHTML='<div class="empty">💬 No history yet!</div>';return;}
+        list.innerHTML=data.map(item=>`
+            <div class="hi ${item.is_injection?'injection':'safe-i'}">
+                <div class="hi-top">
+                    <span class="hi-text">${esc(item.original_text.substring(0,80))}${item.original_text.length>80?'...':''}</span>
+                    <span class="bpill ${item.is_injection?'bp-danger':'bp-safe'}">${item.is_injection?'⚠️ THREAT':'✅ SAFE'}</span>
+                </div>
+                <div class="hi-meta">🌐 ${item.detected_language} · ⚠️ ${item.risk_level} · 🎯 ${item.confidence}% · 🕒 ${item.timestamp}</div>
+                ${item.threat_types?`<div class="hi-tags">${item.threat_types.split(',').filter(t=>t.trim()).map(t=>`<span class="htag">${t.trim()}</span>`).join('')}</div>`:''}
+            </div>`).join('');
+    }catch{}
+}
+
+async function clearHistory(){
+    if(!confirm('Clear all history?'))return;
+    await fetch(`${API}/clear`,{method:'DELETE'});
+    loadHistory(); loadStats();
+    showToast('Cleared!');
+}
+
+async function downloadReport(){
+    showToast('📄 Generating PDF...','#1a5cd4');
+    try{
+        const res=await fetch(`${API}/report`);
+        if(!res.ok){showToast('❌ Error!','#e74c3c');return;}
+        const blob=await res.blob();
+        const url=window.URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url; a.download='InjectionGuard_Report.pdf';
+        document.body.appendChild(a); a.click();
+        a.remove(); window.URL.revokeObjectURL(url);
+        showToast('✅ PDF Downloaded!','#1db954');
+    }catch{showToast('❌ Backend not running!','#e74c3c');}
+}
+</script>
+</body>
+</html>
